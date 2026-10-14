@@ -285,7 +285,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "torch", marker = "extra == 'mps'", specifier = ">=2.6" }]
+requires-dist = [{ name = "torch", marker = "extra == 'mps'", specifier = "==2.14.1" }]
 provides-extras = ["mps"]
 
 [package.metadata.requires-dev]
