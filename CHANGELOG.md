@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3
+
+- Bottleneck classification (`analyze.py`): data-loading / host-overhead /
+  memory-pressure / variance rules over measured fields only; no MFU/SOL
+  (no Apple peak API); Summary/Metrics/Findings report format.
+- `mpspulse analyze` CLI with opt-in `--deep` (`torch.mps.profiler` +
+  `metalperftrace collect/overview`; missing tools warn, base report
+  always emitted).
+- Skill `mps-analyze` + OMP command `/analyze-perf`.
+
 ## v0.2
 
 - ETA engine (`eta.py`): [p10, p90] intervals from step samples, never a

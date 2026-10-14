@@ -70,6 +70,19 @@ def build_parser() -> argparse.ArgumentParser:
     es.add_argument("--val-s", type=float, default=0.0, help="val overhead per epoch (s)")
     es.add_argument("--ckpt-s", type=float, default=0.0, help="checkpoint overhead per epoch (s)")
     es.add_argument("--json", default=None, help="write ETA JSON here")
+
+    an = sub.add_parser("analyze", help="classify bottlenecks in a profile report")
+    an.add_argument("--input", required=True, help="profile JSON from `profile`")
+    an.add_argument(
+        "--deep",
+        action="store_true",
+        help="also capture torch.mps.profiler + metalperftrace sample",
+    )
+    an.add_argument(
+        "--model", default=None, help="model to run under --deep (default: report's model)"
+    )
+    an.add_argument("--batch-size", type=int, default=None)
+    an.add_argument("--json", default=None, help="write analysis JSON here")
     return p
 
 
@@ -318,6 +331,110 @@ def cmd_estimate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_analyze(args: argparse.Namespace) -> int:
+    from mpspulse.analyze import analyze
+
+    try:
+        with open(args.input) as fh:
+            report = json.load(fh)
+        result = analyze(report)
+    except (OSError, ValueError, KeyError) as exc:
+        print(f"mpspulse: cannot analyze {args.input}: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    if args.deep:
+        result.deep = _deep_sample(args, report)
+    text = json.dumps(result.to_dict(), indent=2)
+    if args.json:
+        with open(args.json, "w") as fh:
+            fh.write(text + "\n")
+    else:
+        print(text)
+    _print_analysis_human(result)
+    return 0
+
+
+def _deep_sample(args: argparse.Namespace, report: dict) -> dict:
+    """Opt-in deep capture: profiler context then metalperftrace collect."""
+    import shutil
+    import tempfile
+
+    deep: dict = {"warnings": []}
+    model = args.model or report.get("model")
+    batch_size = args.batch_size or report.get("batch_size", 8)
+    if not model or model == "dry-run (no measurement)":
+        deep["warnings"].append("deep: no runnable model; skipping capture")
+        return deep
+    try:
+        from mpspulse.timing import _require_mps
+
+        _require_mps()
+        import torch
+
+        ns = argparse.Namespace(model=model, batch_size=batch_size, iters=5, warmup=2)
+        dataloader, step_fn, _ = _build_workload(ns)
+        batches = [b for _, b in zip(range(7), dataloader)]
+        for batch in batches[:2]:
+            step_fn(batch)
+        torch.mps.synchronize()
+        with torch.mps.profiler.profile():
+            for batch in batches[2:]:
+                step_fn(batch)
+        torch.mps.synchronize()
+        deep["profiler"] = "torch.mps.profiler: 5 steps captured (signposts only)"
+    except Exception as exc:  # noqa: BLE001 — base report must still emit
+        deep["warnings"].append(f"deep: profiler capture failed: {exc}")
+    if shutil.which("metalperftrace"):
+        try:
+            with tempfile.TemporaryDirectory(prefix="mps-deep-") as tmp:
+                proc = subprocess.run(
+                    ["metalperftrace", "collect", "--last", "30s", tmp],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+                import glob as _glob
+
+                traces = _glob.glob(f"{tmp}/*.atrc")
+                if proc.returncode == 0 and traces:
+                    ov = subprocess.run(
+                        ["metalperftrace", "overview", "--json", traces[0]],
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=60,
+                    )
+                    deep["metalperftrace"] = ov.stdout[:2000] or "(empty overview)"
+                else:
+                    deep["warnings"].append(
+                        f"deep: metalperftrace collect produced no trace (rc={proc.returncode})"
+                    )
+        except Exception as exc:  # noqa: BLE001 — best-effort capture
+            deep["warnings"].append(f"deep: metalperftrace failed: {exc}")
+    else:
+        deep["warnings"].append("deep: metalperftrace not on PATH; skipping")
+    return deep
+
+
+def _print_analysis_human(result) -> None:
+    print("## Summary", file=sys.stderr)
+    print(result.summary, file=sys.stderr)
+    print("## Metrics", file=sys.stderr)
+    for key, value in result.metrics.items():
+        print(f"- {key}: {value}", file=sys.stderr)
+    if result.findings:
+        print("## Findings", file=sys.stderr)
+        for finding in result.findings:
+            print(
+                f"{finding.priority}. [{finding.class_}] {finding.metric}="
+                f"{finding.value:.4f} (threshold {finding.threshold})",
+                file=sys.stderr,
+            )
+            print(f"   {finding.recommendation}", file=sys.stderr)
+    else:
+        print("## Findings: none — clean bill.", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "profile":
@@ -328,6 +445,8 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_USAGE
     if args.command == "estimate":
         return cmd_estimate(args)
+    if args.command == "analyze":
+        return cmd_analyze(args)
     raise AssertionError(f"unreachable: {args.command}")
 
 
