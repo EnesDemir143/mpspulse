@@ -2,7 +2,7 @@
 
 The core contract: `gpu_event_ms` (nullable hardware GPU time) is always
 kept separate from `wall_ms` (end-to-end pipeline time). Every consumer
-(ETA, analysis, OMP checks) depends on this split.
+(ETA, analysis, agent checks) depends on this split.
 """
 
 from __future__ import annotations

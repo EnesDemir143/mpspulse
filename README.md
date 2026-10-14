@@ -1,53 +1,106 @@
-# mpspulse
+# mpspulse — Agent Skills for Apple Silicon PyTorch Profiling
 
-Apple Silicon PyTorch MPS profiling and training ETA. NVIDIA TensorRT-LLM
-performance skills, ported to macOS MPS: real measurements via a Python CLI,
-guidance via Agent Skills + OMP slash commands.
+NVIDIA TensorRT-LLM performance skills, ported to macOS Apple Silicon PyTorch
+MPS: real measurements via a Python CLI, guidance via Agent Skills. Works with
+any agent that supports the [Agent Skills](https://agentskills.io/) format
+(Claude Code, Cursor, Codex, OpenCode, and more).
+
+[![skills.sh](https://skills.sh/b/EnesDemir143/mpspulse)](https://skills.sh/EnesDemir143/mpspulse)
 
 ## Install
 
 ```sh
-uv sync                  # CLI + tests, no torch (~MBs)
-uv sync --extra mps      # + PyTorch with MPS (~2 GB)
+# 1. Install the skills into your agent
+npx skills add EnesDemir143/mpspulse
+
+# 2. Install the measurement CLI (skills call this; they never invent numbers)
+pip install "mpspulse[mps]"
 ```
 
-## Quickstart
+The base `pip install mpspulse` is torch-free (~MBs: `analyze`, `sync-scan`,
+`estimate --mode static/live` all work). The `[mps]` extra adds PyTorch
+(~2 GB) for on-device measurement.
+
+## Available Skills
+
+### mps-profile
+
+Profile a representative PyTorch MPS training step with warmup, steady-state
+timing, and GPU-vs-wall separation.
+
+**Use when:** "profile this model", "benchmark my training step", "samples
+per second", "how slow is my loop", "data load time", "MPS timing".
+
+### mps-estimate
+
+Estimate total training time from measured step times. Reports an interval
+with source and warnings, never a single invented number.
+
+**Use when:** "how long will training take", "estimate training time", "ETA
+for my run", "predict runtime", "time to train".
+
+### mps-analyze
+
+Classify bottlenecks (data-loading / host-overhead / memory-pressure /
+variance) from a measured profile report. Every finding traces to evidence.
+
+**Use when:** "analyze this profile", "why is training slow", "diagnose
+bottleneck", "performance analysis", "what is limiting throughput".
+
+### mps-sync-trace
+
+Find host-device syncs (`.item()`, `.cpu()`, …) in training code via a
+read-only static scan, and optionally capture deep `.gputrace` GPU traces.
+
+**Use when:** "find syncs", ".item() in my loop", "sync-free",
+"host-device sync", "capture a Metal trace", "gputrace my training".
+
+## How it works
+
+```
+You ask → skill triggers → skill runs `mpspulse` CLI → real JSON → report
+```
+
+- **Skill = guidance; CLI = measurement.** The agent never invents numbers.
+- **GPU event time and wall-clock time are always separate.** `gpu_event_ms`
+  (hardware GPU time) vs `wall_ms` (end-to-end) vs `data_ms` (dataloader).
+- **No silent CPU fallback.** Without MPS, measurement exits 2 with a clear
+  message instead of corrupting GPU/wall separation.
+- **`script:` targets profile `--isolated`** in a subprocess by default, so
+  your model/optimizer state is untouched.
+
+## CLI reference
 
 ```sh
-uv run mpspulse profile --model resnet50 --batch-size 8 --iters 30 \
-  --json /tmp/r.json
-uv run mpspulse profile --model resnet50 --explain   # GPU-vs-wall guide
+mpspulse profile --model resnet50 --batch-size 8 --iters 30 --json /tmp/r.json
+mpspulse estimate --steps 10000 --mode benchmark --model resnet50
+mpspulse analyze --input /tmp/r.json [--deep]
+mpspulse sync-scan path/to/train.py
+mpspulse gputrace --output trace.gputrace --count 3 --browse -- python train.py
 ```
 
-## GPU event time vs wall-clock time
+Builtin models (`resnet50`, `vit_b16`, `unet_tiny`) are hand-rolled
+torchvision-free definitions; profile your own code with
+`--model script:mymodule:train_step`.
 
-- `gpu_event_ms`: hardware-measured GPU kernel time (MPS event pairs).
-- `wall_ms`: end-to-end per-iteration time (data + CPU + GPU + optimizer).
-- `data_ms`: dataloader time between iterations; `data/wall > 0.2` means
-  data loading is the bottleneck.
-- `samples_per_sec`: batch_size / mean wall seconds.
-
-A `gpu_event_ms` much smaller than `wall_ms` means the GPU is idle most of
-the iteration (host overhead or data starvation).
-
-## Layout
+## Repo layout
 
 ```text
-skills/     # SKILL.md files (Agent Skills compatible, OMP native discovery)
-commands/   # OMP slash commands (/profile, /train-estimate, /analyze-perf)
-src/        # timing, loop profiling, ETA, analysis (CLI does real measurement)
+skills/     # SKILL.md files (Agent Skills format, npx-skills installable)
+src/        # mpspulse CLI: timing, loop profiling, ETA, analysis
 tests/      # unit + MPS-gated integration tests
 references/ # upstream pins (SOURCES.md), CUDA→MPS port notes (PORT_NOTES.md)
-examples/   # mock experiment harness + measured results
-scripts/    # validation scripts (mock suite, ETA accuracy, OMP e2e)
+examples/   # mock experiment harness + measured M2 Pro results
+scripts/    # validation scripts (mock suite, ETA accuracy)
 ```
 
-## Rules
+## Development
 
-- Skill = guidance; Python CLI = measurement. The LLM never invents numbers.
-- GPU event time and wall-clock time are always reported separately.
-- Benchmarks never silently fall back to CPU (exit 2 with a clear message).
-- `script:` targets profile `--isolated` in a subprocess by default.
+```sh
+uv sync --group dev       # lint + test env (no torch)
+uv sync --extra mps       # + PyTorch for on-device measurement
+uv run ruff check . && uv run ruff format --check . && uv run pytest -q
+```
 
 ## License
 

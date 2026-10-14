@@ -8,7 +8,7 @@ description: >
   Triggers: "analyze this profile", "why is training slow", "diagnose
   bottleneck", "performance analysis", "what is limiting throughput".
 license: Apache-2.0
-compatibility: Requires the mpspulse repo (uv + Python 3.11+); --deep capture needs macOS on Apple Silicon with torch installed
+compatibility: Requires the mpspulse CLI (pip install "mpspulse[mps]"); --deep capture needs macOS on Apple Silicon with torch installed
 metadata:
   author: mpspulse contributors
   port_of: NVIDIA perf-analysis
@@ -29,13 +29,15 @@ Classify bottlenecks from a measured profile report.
 
 ## Workflow
 
-1. **Analyze.** From the mpspulse repo:
+1. **Check the CLI.** If `mpspulse --help` fails, tell the user to install it:
+   `pip install "mpspulse[mps]"`.
+2. **Analyze.** Run:
    ```sh
-   uv run mpspulse analyze --input /tmp/profile.json
+   mpspulse analyze --input /tmp/profile.json
    ```
    Add `--deep` for an opt-in `torch.mps.profiler` + `metalperftrace`
    sample (warnings, never failure, when tools are missing).
-2. **Report.** Use the Summary / Metrics / Findings structure from the
+3. **Report.** Use the Summary / Metrics / Findings structure from the
    JSON. Quote evidence values; keep recommendations prioritized.
 
 ## Bottleneck classes

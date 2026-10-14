@@ -8,7 +8,7 @@ description: >
   Triggers: "how long will training take", "estimate training time",
   "ETA for my run", "predict runtime", "time to train".
 license: Apache-2.0
-compatibility: Requires the mpspulse repo (uv + Python 3.11+); benchmark mode needs macOS on Apple Silicon with torch installed
+compatibility: Requires the mpspulse CLI (pip install "mpspulse[mps]"); benchmark mode needs macOS on Apple Silicon with torch installed
 metadata:
   author: mpspulse contributors
 ---
@@ -28,18 +28,20 @@ Predict total training time from step-time measurements.
 
 ## Workflow
 
-1. **Estimate.** From the mpspulse repo:
+1. **Check the CLI.** If `mpspulse --help` fails, tell the user to install it:
+   `pip install "mpspulse[mps]"`.
+2. **Estimate.** Run:
    ```sh
    # static: caller-supplied step ms (low confidence)
-   uv run mpspulse estimate --steps N --epochs E --step-ms X
+   mpspulse estimate --steps N --epochs E --step-ms X
    # benchmark: short live measurement (preferred)
-   uv run mpspulse estimate --steps N --epochs E --mode benchmark \
+   mpspulse estimate --steps N --epochs E --mode benchmark \
      --model <builtin|script:mod:fn> --batch-size B
    # live: pipe real step times (one float per line)
-   <training loop> | uv run mpspulse estimate --steps N --mode live
+   <training loop> | mpspulse estimate --steps N --mode live
    ```
    Add `--grad-accum K --startup-s S --val-s V --ckpt-s C` as known.
-2. **Report.** Quote p50 with [p10, p90], source, n_samples, warnings, and
+3. **Report.** Quote p50 with [p10, p90], source, n_samples, warnings, and
    history-drift notes — from the JSON only.
-3. **Calibrate.** Benchmark runs append to `~/.mpspulse/history.jsonl`; a
+4. **Calibrate.** Benchmark runs append to `~/.mpspulse/history.jsonl`; a
    >20% drift vs past same-config runs warns automatically.

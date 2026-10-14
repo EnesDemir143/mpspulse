@@ -1,13 +1,26 @@
 [project]
 name = "mpspulse"
-version = "0.1.0"
-description = "Apple Silicon PyTorch MPS profiling and training ETA"
+version = "0.5.0"
+description = "Apple Silicon PyTorch MPS profiling and training ETA (measurement CLI for mpspulse agent skills)"
+readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "EnesDemir143" }]
+keywords = ["pytorch", "mps", "apple-silicon", "profiling", "agent-skills"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = []
+urls = { Homepage = "https://github.com/EnesDemir143/mpspulse" }
 
 [project.optional-dependencies]
 mps = [
-    "torch==2.14.1",
+    "torch>=2.6",
 ]
 
 [dependency-groups]
