@@ -8,6 +8,7 @@ description: >
   Triggers: "profile this model", "benchmark my training step",
   "samples per second", "how slow is my loop", "data load time", "MPS timing".
 license: Apache-2.0
+compatibility: Requires the mpspulse repo (uv + Python 3.11+); MPS measurements need macOS on Apple Silicon with torch installed
 metadata:
   author: mpspulse contributors
   port_of: NVIDIA perf-workload-profiling
