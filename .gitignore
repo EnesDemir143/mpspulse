@@ -3,4 +3,5 @@ __pycache__/
 *.egg-info/
 .benchmarks/
 *.gputrace
+.omp/
 .DS_Store
