@@ -112,8 +112,11 @@ def check_command(spec: dict) -> tuple[bool, str, str]:
         # output p50 must match history-derived expectation within 5%
         figs = output_figures(output)
         if not any(close_enough(f, {expected_p50}) for f in figs):
-            return False, (f"output p50 inconsistent with history "
-                           f"(expected ~{expected_p50:.2f}s)"), transcript
+            return (
+                False,
+                (f"output p50 inconsistent with history (expected ~{expected_p50:.2f}s)"),
+                transcript,
+            )
         if "benchmark" not in output:
             return False, "source=benchmark not reported", transcript
         return True, "green", transcript
