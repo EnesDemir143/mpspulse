@@ -56,10 +56,16 @@ Upstream originals: `references/upstream/` (pins in `SOURCES.md`).
 - `gpucapture`/`gpudebug` workflow ported from Apple skills; opt-in only,
   never contaminates normal profile/estimate paths. Graphics-oriented metrics
   applied to ML compute labeled `experimental`.
+- Verified 2026-10-14 on M2 Pro: default boundary does NOT capture MPS
+  compute (0 command buffers); explicit `--boundary <Device id>` + `--count`
+  required. `mpspulse gputrace` discovers the boundary via
+  `gpucapture boundaries --pid` before starting.
 
 ## Tool flags — verify from local man pages at implementation
 
-- `metalperftrace`: flags **unverified — confirm first** via `man metalperftrace`.
-- `gpucapture start --until-exit`: exact flags **unverified — confirm first**
-  via `man gpucapture`.
-- `gpudebug -q` scripted browse: per `man gpudebug`.
+- `metalperftrace`: verified via man page — `collect --last <dur> <dir>` +
+  `overview --json <trace>` (2s, used by `analyze --deep`).
+- `gpucapture start --pid --boundary --count --output`: verified via man page
+  + live capture of mock MPS training (3 command buffers, 206 resources).
+- `gpudebug -q --oneshot -t <trace> -c <cmd>`: verified via man page + live
+  browse (`status`, `list`).
