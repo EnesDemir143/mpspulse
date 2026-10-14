@@ -78,7 +78,7 @@ trace on every synchronization:
 import torch
 
 # Enable at the start of the region you want to check
-torch.cuda.set_sync_debug_mode('warn')   # prints warning + stack trace
+torch.cuda.set_sync_debug_mode("warn")  # prints warning + stack trace
 # torch.cuda.set_sync_debug_mode('error')  # raises exception on sync
 
 # Run your training step / forward pass here
@@ -151,8 +151,8 @@ x_gpu = x_cpu.cuda()
 x_cpu = x_gpu.cpu()
 
 # After (async, no sync)
-x_gpu = x_cpu.to('cuda', non_blocking=True)
-x_cpu = x_gpu.to('cpu', non_blocking=True)   # only if CPU does not use x_cpu immediately
+x_gpu = x_cpu.to("cuda", non_blocking=True)
+x_cpu = x_gpu.to("cpu", non_blocking=True)  # only if CPU does not use x_cpu immediately
 ```
 
 Only use `non_blocking=True` for GPU-to-CPU when the CPU does not
@@ -168,14 +168,14 @@ validation to after the optimizer step rather than mid-forward/backward:
 ```python
 # Before: sync mid-iteration
 loss = model(batch)
-print(f"Loss: {loss.item()}")    # cuStreamSynchronize
+print(f"Loss: {loss.item()}")  # cuStreamSynchronize
 loss.backward()
 
 # After: delay to end of iteration
 loss = model(batch)
 loss.backward()
 optimizer.step()
-print(f"Loss: {loss.item()}")    # sync is outside the hot path
+print(f"Loss: {loss.item()}")  # sync is outside the hot path
 ```
 
 **5. Coalesce multiple syncs into one** -- If you need several GPU values
@@ -183,13 +183,13 @@ on CPU, gather them and transfer once:
 
 ```python
 # Before: 3 separate syncs
-loss_val = loss.item()           # cuStreamSynchronize
-acc_val = accuracy.item()        # cuStreamSynchronize
-gnorm_val = grad_norm.item()     # cuStreamSynchronize
+loss_val = loss.item()  # cuStreamSynchronize
+acc_val = accuracy.item()  # cuStreamSynchronize
+gnorm_val = grad_norm.item()  # cuStreamSynchronize
 
 # After: 1 sync
 metrics = torch.stack([loss, accuracy, grad_norm])
-vals = metrics.cpu()             # single cuStreamSynchronize
+vals = metrics.cpu()  # single cuStreamSynchronize
 loss_val, acc_val, gnorm_val = vals.tolist()
 ```
 
@@ -222,7 +222,7 @@ graphing.
 Re-run detection to confirm syncs are eliminated:
 
 ```python
-torch.cuda.set_sync_debug_mode('error')  # will raise if any sync remains
+torch.cuda.set_sync_debug_mode("error")  # will raise if any sync remains
 train_step(model, batch)
 torch.cuda.set_sync_debug_mode(0)
 ```

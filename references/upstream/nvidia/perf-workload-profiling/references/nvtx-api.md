@@ -30,9 +30,9 @@ pip install nvtx
 ```python
 import nvtx
 
+
 @nvtx.annotate("training_step", color="blue")
-def training_step():
-    ...
+def training_step(): ...
 ```
 
 If `message` is omitted, defaults to the function name:
@@ -57,9 +57,9 @@ Domains provide namespace isolation. Use when your annotations might conflict wi
 ```python
 my_domain = nvtx.Domain("my_training")
 
+
 @nvtx.annotate("step", domain=my_domain)
-def step():
-    ...
+def step(): ...
 ```
 
 ## Categories
@@ -68,12 +68,11 @@ Categories group annotations within a domain for filtering in profiler tools:
 
 ```python
 @nvtx.annotate("forward", category=1)
-def forward():
-    ...
+def forward(): ...
+
 
 @nvtx.annotate("backward", category=2)
-def backward():
-    ...
+def backward(): ...
 ```
 
 ## Payloads

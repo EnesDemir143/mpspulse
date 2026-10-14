@@ -83,8 +83,11 @@ for i, batch in enumerate(dataloader):
     prev_iter_end = t_end
 
 import statistics
-print(f"Average: iter {statistics.mean(iter_times):.2f} ms, "
-      f"fps {BATCH_SIZE / (statistics.mean(iter_times) / 1000):.2f}")
+
+print(
+    f"Average: iter {statistics.mean(iter_times):.2f} ms, "
+    f"fps {BATCH_SIZE / (statistics.mean(iter_times) / 1000):.2f}"
+)
 ```
 
 ### Interpreting Results
@@ -109,6 +112,7 @@ For single kernels, one-shot inference, or standalone operations, write CUDA eve
 ```python
 import torch
 
+
 def benchmark(fn, warmup=50, iters=100):
     for _ in range(warmup):
         fn()
@@ -131,6 +135,7 @@ def benchmark(fn, warmup=50, iters=100):
 ```python
 import torch
 import statistics
+
 
 def benchmark_detailed(fn, warmup=50, iters=100):
     for _ in range(warmup):
@@ -176,10 +181,11 @@ NVTX (NVIDIA Tools Extension) adds named annotations to profiler timelines. Use 
 ```python
 import nvtx
 
+
 # Decorator — annotates every call
 @nvtx.annotate("training_step", color="blue")
-def training_step():
-    ...
+def training_step(): ...
+
 
 # Context manager — annotates a code block
 with nvtx.annotate("data_loading", color="green"):

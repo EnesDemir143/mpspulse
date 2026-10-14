@@ -35,10 +35,10 @@ Query hardware specs for bandwidth/throughput analysis via `torch.cuda.get_devic
 
 ```python
 props = torch.cuda.get_device_properties(0)
-props.name               # "NVIDIA H100 80GB HBM3"
-props.total_memory        # bytes (e.g. 85899345920)
-props.memory_clock_rate   # kHz (e.g. 2619000)
-props.memory_bus_width    # bits (e.g. 5120)
+props.name  # "NVIDIA H100 80GB HBM3"
+props.total_memory  # bytes (e.g. 85899345920)
+props.memory_clock_rate  # kHz (e.g. 2619000)
+props.memory_bus_width  # bits (e.g. 5120)
 ```
 
 Compute theoretical peak memory bandwidth:
@@ -89,6 +89,7 @@ The eager warmup and replay warmup are both necessary. Graph replay has differen
 
 ```python
 import torch
+
 
 def benchmark_cuda_graph(fn, warmup=50, iters=100):
     for _ in range(warmup):
