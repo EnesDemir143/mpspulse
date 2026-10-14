@@ -6,7 +6,9 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-mps = ["torch>=2.6"]
+mps = [
+    "torch==2.14.1",
+]
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.9"]
