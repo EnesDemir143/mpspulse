@@ -9,6 +9,7 @@ description: >
   Triggers: "find syncs", ".item() in my loop", "sync-free", "host-device
   sync", "capture a Metal trace", "gputrace my training", "inspect .gputrace".
 license: Apache-2.0
+compatibility: Requires the mpspulse repo (uv + Python 3.11+); gputrace capture needs macOS 27+ with gpucapture/gpudebug installed
 metadata:
   author: mpspulse contributors
   port_of: NVIDIA perf-torch-sync-free + Apple using-gpucapture/using-gpudebug

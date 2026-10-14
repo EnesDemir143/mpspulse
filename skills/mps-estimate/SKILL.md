@@ -8,6 +8,7 @@ description: >
   Triggers: "how long will training take", "estimate training time",
   "ETA for my run", "predict runtime", "time to train".
 license: Apache-2.0
+compatibility: Requires the mpspulse repo (uv + Python 3.11+); benchmark mode needs macOS on Apple Silicon with torch installed
 metadata:
   author: mpspulse contributors
 ---

@@ -8,6 +8,7 @@ description: >
   Triggers: "analyze this profile", "why is training slow", "diagnose
   bottleneck", "performance analysis", "what is limiting throughput".
 license: Apache-2.0
+compatibility: Requires the mpspulse repo (uv + Python 3.11+); --deep capture needs macOS on Apple Silicon with torch installed
 metadata:
   author: mpspulse contributors
   port_of: NVIDIA perf-analysis
