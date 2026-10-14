@@ -1,7 +1,8 @@
 # mpspulse — Agent Skills for Apple Silicon PyTorch Profiling
 
-NVIDIA TensorRT-LLM performance skills, ported to macOS Apple Silicon PyTorch
-MPS: real measurements via a Python CLI, guidance via Agent Skills. Works with
+NVIDIA [TensorRT-LLM performance skills](https://github.com/NVIDIA/TensorRT-LLM/tree/main/.claude/skills),
+ported to macOS Apple Silicon PyTorch MPS: real measurements via a Python CLI,
+guidance via Agent Skills. Works with
 any agent that supports the [Agent Skills](https://agentskills.io/) format
 (Claude Code, Cursor, Codex, OpenCode, and more).
 
