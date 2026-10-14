@@ -6,7 +6,9 @@ guidance via Agent Skills. Works with
 any agent that supports the [Agent Skills](https://agentskills.io/) format
 (Claude Code, Cursor, Codex, OpenCode, and more).
 
-[![skills.sh](https://skills.sh/b/EnesDemir143/mpspulse)](https://skills.sh/EnesDemir143/mpspulse)
+```sh
+npx skills add EnesDemir143/mpspulse
+```
 
 ## Install
 
