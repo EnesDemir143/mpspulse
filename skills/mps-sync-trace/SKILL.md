@@ -9,7 +9,7 @@ description: >
   Triggers: "find syncs", ".item() in my loop", "sync-free", "host-device
   sync", "capture a Metal trace", "gputrace my training", "inspect .gputrace".
 license: Apache-2.0
-compatibility: Requires the mpspulse repo (uv + Python 3.11+); gputrace capture needs macOS 27+ with gpucapture/gpudebug installed
+compatibility: Requires the mpspulse CLI (pip install mpspulse); gputrace capture needs macOS 27+ with gpucapture/gpudebug installed
 metadata:
   author: mpspulse contributors
   port_of: NVIDIA perf-torch-sync-free + Apple using-gpucapture/using-gpudebug
@@ -20,6 +20,11 @@ metadata:
 Two tools: a static sync scanner (always cheap) and deep GPU capture
 (explicit opt-in only).
 
+## Setup
+
+If `mpspulse --help` fails, tell the user to install the CLI:
+`pip install mpspulse` (sync-scan needs no torch; gputrace needs macOS 27+).
+
 ## Sync scan (read-only)
 
 MPS has no runtime sync-debug mode, so detection is a static AST scan for
@@ -27,7 +32,7 @@ MPS has no runtime sync-debug mode, so detection is a static AST scan for
 `torch.tensor(..., device=...)` in/near loops:
 
 ```sh
-uv run mpspulse sync-scan path/to/train.py
+mpspulse sync-scan path/to/train.py
 ```
 
 Classify each hit before suggesting fixes:
@@ -44,7 +49,7 @@ Fix order: remove → `non_blocking=True` → sync-free API → delay → coales
 ## Deep trace (opt-in)
 
 ```sh
-uv run mpspulse gputrace --output trace.gputrace --count 3 --browse -- \
+mpspulse gputrace --output trace.gputrace --count 3 --browse -- \
   python train.py
 ```
 

@@ -8,7 +8,7 @@ description: >
   Triggers: "profile this model", "benchmark my training step",
   "samples per second", "how slow is my loop", "data load time", "MPS timing".
 license: Apache-2.0
-compatibility: Requires the mpspulse repo (uv + Python 3.11+); MPS measurements need macOS on Apple Silicon with torch installed
+compatibility: Requires the mpspulse CLI (pip install "mpspulse[mps]"); measurements need macOS on Apple Silicon with torch installed
 metadata:
   author: mpspulse contributors
   port_of: NVIDIA perf-workload-profiling
@@ -31,16 +31,18 @@ timing, and GPU-vs-wall separation.
 
 ## Workflow
 
-1. **Profile.** Run the CLI (from the mpspulse repo):
+1. **Check the CLI.** If `mpspulse --help` fails, tell the user to install it:
+   `pip install "mpspulse[mps]"` (measurements need macOS on Apple Silicon).
+2. **Profile.** Run:
    ```sh
-   uv run mpspulse profile --model <resnet50|vit_b16|unet_tiny|script:mod:fn> \
+   mpspulse profile --model <resnet50|vit_b16|unet_tiny|script:mod:fn> \
      --batch-size N --iters 30 --warmup 5 --json /tmp/profile.json
    ```
    For a user's own `train_step`, use `--model script:mymod:train_step`
    (runs `--isolated` by default).
-2. **Check validity.** `gpu_event_ms.mean_ms <= wall_ms.mean_ms` must hold.
+3. **Check validity.** `gpu_event_ms.mean_ms <= wall_ms.mean_ms` must hold.
    If `data_ms / wall_ms > 0.2`, data loading is the bottleneck.
-3. **Report.** Quote mean ± std with `n`, samples/sec, memory, and warnings —
+4. **Report.** Quote mean ± std with `n`, samples/sec, memory, and warnings —
    copied from the JSON, with the JSON path cited.
 
 ## Reading the numbers

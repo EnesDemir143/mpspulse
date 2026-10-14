@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.5
+
+- General Agent Skills release: OMP slash commands removed (`commands/`
+  deleted); skills work with any Agent Skills-compatible agent via
+  `npx skills add EnesDemir143/mpspulse`.
+- Skills call the installed `mpspulse` CLI (`pip install "mpspulse[mps]"`)
+  instead of `uv run` from a repo checkout; `compatibility` fields updated.
+- PyPI-ready packaging: readme, license, classifiers, `torch>=2.6` extra.
+- Removed `scripts/omp_e2e.py` + OMP transcripts (agent-specific validation).
+- README rewritten skill-first with install badge.
+
 ## v0.4
 
 - Sync scanner (`syncscan.py`): read-only AST scan for `.item()`/`.cpu()`/
