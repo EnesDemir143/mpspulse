@@ -46,7 +46,7 @@ $ omp -p '/train-estimate 500 --mode benchmark --model unet_tiny --batch-size 2'
 
 Runtime warning, verbatim:
 ```text
-/Users/enesdemir/Documents/mpspulse/.venv/lib/python3.14/site-packages/torch/_subclasses/functional_tensor.py:368: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /Users/runner/work/pytorch/pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+<venv>/torch/_subclasses/functional_tensor.py:368: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /Users/runner/work/pytorch/pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
 ```
 Working...
 
