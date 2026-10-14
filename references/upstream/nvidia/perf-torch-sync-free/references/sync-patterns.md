@@ -40,9 +40,9 @@ stream = torch.cuda.Stream()
 event = torch.cuda.Event()
 
 event.record()
-event.wait()              # cudaStreamWaitEvent -- non-blocking for host
-event.synchronize()       # cuEventSynchronize -- BLOCKS CPU
-stream.synchronize()      # cuStreamSynchronize -- BLOCKS CPU
+event.wait()  # cudaStreamWaitEvent -- non-blocking for host
+event.synchronize()  # cuEventSynchronize -- BLOCKS CPU
+stream.synchronize()  # cuStreamSynchronize -- BLOCKS CPU
 torch.cuda.synchronize()  # cuCtxSynchronize -- BLOCKS CPU, waits for ALL streams
 ```
 
@@ -64,20 +64,20 @@ region. Use `event.wait()` (GPU-side stream ordering) instead of
 Moving tensors between CPU and GPU triggers synchronization by default.
 
 ```python
-x_gpu = torch.randint(0, 10, (3, 4), device='cuda')
+x_gpu = torch.randint(0, 10, (3, 4), device="cuda")
 
 # GPU -> CPU
-x_cpu = x_gpu.cpu()                                    # cuStreamSynchronize
-x_cpu = x_gpu.to(device='cpu', non_blocking=True)      # no sync (async)
+x_cpu = x_gpu.cpu()  # cuStreamSynchronize
+x_cpu = x_gpu.to(device="cpu", non_blocking=True)  # no sync (async)
 
 # CPU -> GPU
 idx_cpu = torch.tensor([2, 0, 1], dtype=torch.int64)
-idx_gpu = idx_cpu.cuda()                               # cuStreamSynchronize
-idx_gpu = idx_cpu.cuda(non_blocking=True)               # no sync (async)
-idx_gpu = idx_cpu.to(device='cuda', non_blocking=True)  # no sync (async)
+idx_gpu = idx_cpu.cuda()  # cuStreamSynchronize
+idx_gpu = idx_cpu.cuda(non_blocking=True)  # no sync (async)
+idx_gpu = idx_cpu.to(device="cuda", non_blocking=True)  # no sync (async)
 
 # Type conversion pitfall
-x_gpu.type(torch.long)        # dtype conversion, stays on GPU -- no sync
+x_gpu.type(torch.long)  # dtype conversion, stays on GPU -- no sync
 x_gpu.type(torch.LongTensor)  # creates CPU tensor -- cuStreamSynchronize
 ```
 
@@ -102,34 +102,34 @@ Creating tensors from Python objects or NumPy arrays directly on CUDA syncs.
 
 ```python
 # From Python scalar -- syncs
-torch.tensor(0, device='cuda')                          # cuStreamSynchronize
-torch.tensor(0).to(device='cuda')                       # cuStreamSynchronize
-torch.tensor(0).to(device='cuda', non_blocking=True)    # no sync (async)
+torch.tensor(0, device="cuda")  # cuStreamSynchronize
+torch.tensor(0).to(device="cuda")  # cuStreamSynchronize
+torch.tensor(0).to(device="cuda", non_blocking=True)  # no sync (async)
 
 # Sync-free scalar creation
-zero = torch.zeros(1, device='cuda', dtype=torch.int64).squeeze()  # no sync
+zero = torch.zeros(1, device="cuda", dtype=torch.int64).squeeze()  # no sync
 
 # From NumPy array -- syncs
 arr = np.array([1, 2, 3])
-arr_gpu = torch.as_tensor(arr, device='cuda')           # cuStreamSynchronize
+arr_gpu = torch.as_tensor(arr, device="cuda")  # cuStreamSynchronize
 
 # Two-step approach -- no sync
-arr_cpu = torch.as_tensor(arr, device='cpu')
-arr_gpu = arr_cpu.to(device='cuda', non_blocking=True)  # no sync (async)
+arr_cpu = torch.as_tensor(arr, device="cpu")
+arr_gpu = arr_cpu.to(device="cuda", non_blocking=True)  # no sync (async)
 
 # From Python list -- syncs
 bool_list = [False]
-torch.cuda.BoolTensor(bool_list)                        # cuStreamSynchronize
+torch.cuda.BoolTensor(bool_list)  # cuStreamSynchronize
 
 # Two-step approach -- no sync
-bool_cpu = torch.tensor(bool_list, dtype=torch.bool, device='cpu')
-bool_gpu = bool_cpu.to(device='cuda', non_blocking=True)  # no sync (async)
+bool_cpu = torch.tensor(bool_list, dtype=torch.bool, device="cpu")
+bool_gpu = bool_cpu.to(device="cuda", non_blocking=True)  # no sync (async)
 
 # Direct allocation functions -- no sync
-torch.zeros(3, 4, device='cuda')    # no sync
-torch.ones(3, 4, device='cuda')     # no sync
-torch.empty(3, 4, device='cuda')    # no sync
-torch.randn(3, 4, device='cuda')    # no sync
+torch.zeros(3, 4, device="cuda")  # no sync
+torch.ones(3, 4, device="cuda")  # no sync
+torch.empty(3, 4, device="cuda")  # no sync
+torch.randn(3, 4, device="cuda")  # no sync
 ```
 
 | Pattern | CUDA Driver API | Sync-Free Alternative |
@@ -155,24 +155,24 @@ the value on CPU.
 loss = torch.randn(1, device="cuda")
 
 # Explicit .item() -- syncs
-loss.item()                          # cuStreamSynchronize
+loss.item()  # cuStreamSynchronize
 
 # Implicit .item() via truth testing -- syncs
-torch.is_nonzero(loss)               # cuStreamSynchronize
-if loss:                             # cuStreamSynchronize (implicit is_nonzero)
+torch.is_nonzero(loss)  # cuStreamSynchronize
+if loss:  # cuStreamSynchronize (implicit is_nonzero)
     pass
 
 # Boolean conditions from GPU comparisons -- syncs
-flag = x_gpu.sum() > 16             # creates bool GPU tensor
-if flag:                             # cuStreamSynchronize (implicit is_nonzero)
+flag = x_gpu.sum() > 16  # creates bool GPU tensor
+if flag:  # cuStreamSynchronize (implicit is_nonzero)
     pass
 
 flag = x_gpu.isnan().any()
-if flag:                             # cuStreamSynchronize
+if flag:  # cuStreamSynchronize
     pass
 
 # Python builtins on GPU tensors -- syncs
-max(x_gpu[0, 0], x_gpu[0, 1])       # cuStreamSynchronize (Python max needs CPU values)
+max(x_gpu[0, 0], x_gpu[0, 1])  # cuStreamSynchronize (Python max needs CPU values)
 
 # GPU-native alternative -- no sync
 torch.max(x_gpu[0, 0], x_gpu[0, 1])  # no sync, result stays on GPU
@@ -206,27 +206,27 @@ Indexing GPU tensors with CPU indices or assigning Python scalars triggers
 implicit device transfers.
 
 ```python
-x_gpu = torch.randint(0, 10, (3, 4), device='cuda')
+x_gpu = torch.randint(0, 10, (3, 4), device="cuda")
 idx_list = [2, 0, 1]
-idx_cpu = torch.tensor(idx_list, dtype=torch.int64, device='cpu')
-idx_gpu = idx_cpu.to(device='cuda', non_blocking=True)
-zero_gpu = torch.zeros(1, device='cuda')
+idx_cpu = torch.tensor(idx_list, dtype=torch.int64, device="cpu")
+idx_gpu = idx_cpu.to(device="cuda", non_blocking=True)
+zero_gpu = torch.zeros(1, device="cuda")
 
 # Integer scalar indexing -- no sync
-x_gpu[0]                              # no sync
+x_gpu[0]  # no sync
 
 # CPU index tensors / Python lists -- sync
-x_gpu[idx_list]                        # cuStreamSynchronize (implicit .to('cuda'))
-x_gpu[idx_cpu]                         # cuStreamSynchronize (implicit .to('cuda'))
+x_gpu[idx_list]  # cuStreamSynchronize (implicit .to('cuda'))
+x_gpu[idx_cpu]  # cuStreamSynchronize (implicit .to('cuda'))
 
 # GPU index tensor -- no sync
-x_gpu[idx_gpu]                         # no sync
+x_gpu[idx_gpu]  # no sync
 
 # Scalar assignment -- sync
-x_gpu[idx_gpu] = 0                     # cuStreamSynchronize (scalar 0 transferred to GPU)
+x_gpu[idx_gpu] = 0  # cuStreamSynchronize (scalar 0 transferred to GPU)
 
 # GPU tensor assignment -- no sync
-x_gpu[idx_gpu] = zero_gpu              # no sync
+x_gpu[idx_gpu] = zero_gpu  # no sync
 
 # Explicit index_select -- no sync
 torch.index_select(x_gpu, 0, idx_gpu)  # no sync
@@ -250,23 +250,23 @@ Python slice syntax (`x[start:stop]`) requires integer values. CUDA tensor
 bounds trigger `.item()` calls.
 
 ```python
-x = torch.randn((32, 32), device='cuda')
-i = torch.tensor([8], dtype=torch.long, device='cuda')
-j = torch.tensor([16], dtype=torch.long, device='cuda')
-s = torch.tensor(list(range(8, 16)), dtype=torch.long, device='cuda')
+x = torch.randn((32, 32), device="cuda")
+i = torch.tensor([8], dtype=torch.long, device="cuda")
+j = torch.tensor([16], dtype=torch.long, device="cuda")
+s = torch.tensor(list(range(8, 16)), dtype=torch.long, device="cuda")
 
 # Python integer bounds -- no sync
-x[8:16]                 # no sync
-x[:, 8:16]              # no sync
+x[8:16]  # no sync
+x[:, 8:16]  # no sync
 
 # CUDA tensor bounds -- syncs (each bound calls .item())
-x[i:j]                  # cuStreamSynchronize x2
-x[:, i:j]               # cuStreamSynchronize x2
-x[i:j, i:j]             # cuStreamSynchronize x4
+x[i:j]  # cuStreamSynchronize x2
+x[:, i:j]  # cuStreamSynchronize x2
+x[i:j, i:j]  # cuStreamSynchronize x4
 
 # Index select with GPU tensor -- no sync
-x[:, s]                 # no sync
-x[s, :]                 # no sync
+x[:, s]  # no sync
+x[s, :]  # no sync
 ```
 
 | Pattern | CUDA Driver API | Sync-Free Alternative |
@@ -294,20 +294,20 @@ are `True`, which is a GPU computation.
 mask_gpu = x_gpu > 5
 
 # Dynamic shape operations -- sync
-torch.nonzero(mask_gpu)                    # cuStreamSynchronize
-x_gpu[mask_gpu]                            # cuStreamSynchronize (implicit nonzero)
-torch.where(mask_gpu)                      # cuStreamSynchronize (implicit nonzero as_tuple)
-x_gpu[torch.where(mask_gpu)]               # cuStreamSynchronize
-torch.masked_select(x_gpu, mask_gpu)       # cuStreamSynchronize
+torch.nonzero(mask_gpu)  # cuStreamSynchronize
+x_gpu[mask_gpu]  # cuStreamSynchronize (implicit nonzero)
+torch.where(mask_gpu)  # cuStreamSynchronize (implicit nonzero as_tuple)
+x_gpu[torch.where(mask_gpu)]  # cuStreamSynchronize
+torch.masked_select(x_gpu, mask_gpu)  # cuStreamSynchronize
 
 # CPU mask avoids sync (size known on CPU)
-mask_cpu = mask_gpu.to(device='cpu', non_blocking=True)
+mask_cpu = mask_gpu.to(device="cpu", non_blocking=True)
 # (must sync or wait before using mask_cpu)
-x_gpu[mask_cpu]                            # no sync (size determined from CPU tensor)
+x_gpu[mask_cpu]  # no sync (size determined from CPU tensor)
 
 # Fixed-shape alternatives -- no sync
-x_gpu & mask_gpu                           # bitwise_and, same shape as input
-torch.where(mask_gpu, x_gpu, 0)            # same shape as input, fills 0 where False
+x_gpu & mask_gpu  # bitwise_and, same shape as input
+torch.where(mask_gpu, x_gpu, 0)  # same shape as input, fills 0 where False
 
 # Correct mean over masked elements
 torch.where(mask_gpu, x_gpu, 0).float().sum() / torch.sum(mask_gpu)
@@ -319,12 +319,12 @@ Assignment into masked positions behaves differently from selection.
 
 ```python
 # These sync (dynamic indexing or tensor value metadata)
-x_gpu[torch.where(mask_gpu)] = -1          # cuStreamSynchronize x2
-x_gpu[mask_gpu] = zero_gpu                 # cuStreamSynchronize
+x_gpu[torch.where(mask_gpu)] = -1  # cuStreamSynchronize x2
+x_gpu[mask_gpu] = zero_gpu  # cuStreamSynchronize
 
 # These do NOT sync (no new allocation needed)
-x_gpu[mask_gpu] = -1                       # no sync (scalar broadcast)
-x_gpu.masked_fill_(mask_gpu, -1)           # no sync
+x_gpu[mask_gpu] = -1  # no sync (scalar broadcast)
+x_gpu.masked_fill_(mask_gpu, -1)  # no sync
 
 # torch.where with 3 args -- no sync
 x_gpu = torch.where(mask_gpu, zero_gpu, x_gpu)  # no sync
@@ -336,23 +336,23 @@ x_gpu = torch.where(mask_gpu, zero_gpu, x_gpu)  # no sync
 x_fp32 = x_gpu.float().requires_grad_()
 grad_gpu = torch.randn_like(x_fp32)
 
-x_fp32.backward(grad_gpu)                               # no sync
-x_fp32[0].backward(grad_gpu[0])                          # no sync
-x_fp32[idx_gpu].backward(grad_gpu[idx_gpu])               # no sync
-x_fp32[mask_cpu].backward(grad_gpu[mask_cpu])             # no sync
-x_fp32[mask_gpu].backward(grad_gpu[mask_gpu])             # cuStreamSynchronize x2
+x_fp32.backward(grad_gpu)  # no sync
+x_fp32[0].backward(grad_gpu[0])  # no sync
+x_fp32[idx_gpu].backward(grad_gpu[idx_gpu])  # no sync
+x_fp32[mask_cpu].backward(grad_gpu[mask_cpu])  # no sync
+x_fp32[mask_gpu].backward(grad_gpu[mask_gpu])  # cuStreamSynchronize x2
 ```
 
 ### Other Dynamic Shape Operations
 
 ```python
-y = torch.zeros((2, 2), device='cuda')
-repeats = torch.tensor([1, 2], device='cpu').to('cuda', non_blocking=True)
+y = torch.zeros((2, 2), device="cuda")
+repeats = torch.tensor([1, 2], device="cpu").to("cuda", non_blocking=True)
 
-torch.repeat_interleave(y, repeats, dim=0)                # cuStreamSynchronize x2
+torch.repeat_interleave(y, repeats, dim=0)  # cuStreamSynchronize x2
 torch.repeat_interleave(y, repeats, dim=0, output_size=3)  # no sync (size specified)
 
-torch.unique(idx_gpu)              # cuStreamSynchronize
+torch.unique(idx_gpu)  # cuStreamSynchronize
 torch.unique_consecutive(idx_gpu)  # cuStreamSynchronize
 ```
 
@@ -375,7 +375,7 @@ Embedding backward can sync depending on PyTorch version and index count.
 ```python
 embedding = torch.nn.Embedding(50304, 768).cuda()
 idx = torch.randint(0, 50304, (4, 1024), dtype=torch.int64)
-idx = idx.to(device='cuda', non_blocking=True)
+idx = idx.to(device="cuda", non_blocking=True)
 
 y = embedding(idx)
 y.sum().backward()  # cuStreamSynchronize x2 in older PyTorch
@@ -399,14 +399,14 @@ Distributed collectives and barriers involve synchronization.
 import torch.distributed as dist
 
 # Synchronous collective -- syncs via events internally
-dist.all_reduce(x_gpu)                    # cuEventSynchronize (internal)
+dist.all_reduce(x_gpu)  # cuEventSynchronize (internal)
 
 # Async collective -- returns immediately
 work = dist.all_reduce(x_gpu, async_op=True)
-work.wait()                               # cuEventSynchronize (explicit wait)
+work.wait()  # cuEventSynchronize (explicit wait)
 
 # Global barrier -- syncs all ranks
-dist.barrier()                            # cuCtxSynchronize
+dist.barrier()  # cuCtxSynchronize
 ```
 
 **DDP logging syncs**: In older PyTorch versions (< 2.0), DistributedDataParallel

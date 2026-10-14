@@ -19,11 +19,16 @@ Upstream originals: `references/upstream/` (pins in `SOURCES.md`).
 
 ## perf-workload-profiling → mps-profile (v0.1)
 
-- Keep: warmup → steady-state, hardware event timing, single final sync,
-  pre-allocation, per-iteration stats (mean/median/std/min/max), data/iter > 0.2 rule.
+- Keep: warmup → steady-state, hardware event timing, per-iteration stats
+  (mean/median/std/min/max), data/iter > 0.2 rule.
+- Deviation (verified 2026-10-14, torch 2.14.1): the direct `benchmark_detailed`
+  port (2n pre-allocated pairs, one final sync, bulk read) fails intermittently
+  on MPS (~15%: "End event was not recorded after start event"). mpspulse uses
+  a single reused event pair with per-iteration sync + immediate read
+  (0 failures in testing). The sync sits after `end.record()`, so measured
+  GPU time excludes sync overhead.
 - Loop template: `torch.cuda.synchronize` → `torch.mps.synchronize`, rest identical.
-- `benchmark_detailed` port: `torch.mps.event.Event` pairs; MPS device only,
-  never silent CPU fallback (corrupts GPU/wall separation).
+- `benchmark_fn`: MPS device only, never silent CPU fallback (corrupts GPU/wall split).
 - Sub-phase breakdown: optional sync+perf_counter per phase (one-off diagnosis).
 - Output: JSON with separate `gpu_event_ms` / `wall_ms` keys (schema.py).
 
