@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4
+
+- Sync scanner (`syncscan.py`): read-only AST scan for `.item()`/`.cpu()`/
+  `.numpy()`/`bool(tensor)`/`float(tensor)`/device-pinned creation in/near
+  loops; `mpspulse sync-scan` CLI.
+- `mpspulse gputrace` (opt-in): boundary discovery + count-limited capture
+  + `--browse` gpudebug summary labeled experimental. Verified live on M2
+  Pro (default boundary captures 0 MPS buffers; explicit Device boundary
+  required — see PORT_NOTES.md).
+- Skill `mps-sync-trace`; `/analyze-perf` extended with `--deep-trace`.
+
 ## v0.3
 
 - Bottleneck classification (`analyze.py`): data-loading / host-overhead /

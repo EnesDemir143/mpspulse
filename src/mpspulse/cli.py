@@ -83,6 +83,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     an.add_argument("--batch-size", type=int, default=None)
     an.add_argument("--json", default=None, help="write analysis JSON here")
+
+    sc = sub.add_parser("sync-scan", help="scan a file for host-device sync patterns")
+    sc.add_argument("path", help="Python file or directory to scan (read-only)")
+    sc.add_argument("--json", default=None, help="write findings JSON here")
+
+    gt = sub.add_parser("gputrace", help="capture a .gputrace of a command (opt-in)")
+    gt.add_argument("--output", default="trace.gputrace", help="trace output path")
+    gt.add_argument(
+        "--count", type=int, default=3, help="command buffers to capture (fewer = smaller trace)"
+    )
+    gt.add_argument(
+        "--browse", action="store_true", help="attach a non-interactive gpudebug summary"
+    )
+    gt.add_argument(
+        "cmd",
+        nargs=argparse.REMAINDER,
+        help="command to run after `--`, e.g. gputrace -- python train.py",
+    )
     return p
 
 
@@ -435,6 +453,138 @@ def _print_analysis_human(result) -> None:
         print("## Findings: none — clean bill.", file=sys.stderr)
 
 
+def cmd_sync_scan(args: argparse.Namespace) -> int:
+    from mpspulse.syncscan import scan_path
+
+    try:
+        findings = scan_path(args.path)
+    except (OSError, SyntaxError) as exc:
+        print(f"mpspulse: cannot scan {args.path}: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    payload = [f.to_dict() for f in findings]
+    text = json.dumps(payload, indent=2)
+    if args.json:
+        with open(args.json, "w") as fh:
+            fh.write(text + "\n")
+    else:
+        print(text)
+    for finding in findings:
+        loop = "hot-loop" if finding.in_hot_loop else "cold"
+        print(
+            f"{finding.file}:{finding.line}: [{loop}] {finding.pattern} — {finding.suggestion}",
+            file=sys.stderr,
+        )
+    if not findings:
+        print("no host-device sync patterns found.", file=sys.stderr)
+    return 0
+
+
+def cmd_gputrace(args: argparse.Namespace) -> int:
+    """Opt-in .gputrace capture. Never runs on the normal profile path."""
+    import os
+    import platform
+    import shutil
+
+    cmd = [c for c in args.cmd if c != "--"]
+    if not cmd:
+        print("mpspulse: gputrace needs a command: gputrace -- <cmd...>", file=sys.stderr)
+        return EXIT_USAGE
+    if shutil.which("gpucapture") is None:
+        print(
+            "mpspulse: gpucapture not found (needs macOS 27+); base profile/estimate unaffected",
+            file=sys.stderr,
+        )
+        return EXIT_USAGE
+    macos_major = int(platform.mac_ver()[0].split(".")[0] or 0)
+    if macos_major and macos_major < 27:
+        print(f"mpspulse: gpucapture needs macOS 27+, this is {macos_major}", file=sys.stderr)
+        return EXIT_USAGE
+    env = {**os.environ, "MTL_CAPTURE_ENABLED": "1"}
+    child = subprocess.Popen(cmd, env=env)
+    try:
+        boundary = _wait_for_boundary(child.pid, timeout_s=30)
+        if boundary is None:
+            print(
+                "mpspulse: no capture boundary appeared (child may have "
+                "exited too fast); run a longer workload",
+                file=sys.stderr,
+            )
+            child.wait()
+            return EXIT_USAGE
+        cap = subprocess.run(
+            [
+                "gpucapture",
+                "start",
+                "--pid",
+                str(child.pid),
+                "--boundary",
+                boundary,
+                "--count",
+                str(args.count),
+                "--output",
+                args.output,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        if cap.returncode != 0:
+            print(f"mpspulse: gpucapture failed: {cap.stderr.strip()[-300:]}", file=sys.stderr)
+            child.wait()
+            return EXIT_USAGE
+    finally:
+        if child.poll() is None:
+            child.wait()
+    print(f"trace: {args.output} (child rc={child.returncode})")
+    if args.browse:
+        _gpudebug_summary(args.output)
+    return 0
+
+
+def _wait_for_boundary(pid: int, timeout_s: float = 30) -> str | None:
+    """Poll `gpucapture boundaries` until a Device/Queue boundary appears."""
+    import time as _time
+
+    deadline = _time.time() + timeout_s
+    while _time.time() < deadline:
+        proc = subprocess.run(
+            ["gpucapture", "boundaries", "--pid", str(pid)],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        for line in proc.stdout.splitlines():
+            parts = line.split()
+            # rows look like: `1  Device  Apple M2 Pro ...`
+            if len(parts) >= 2 and parts[0].isdigit() and parts[1] in ("Device", "Queue"):
+                return parts[0]
+        _time.sleep(1.0)
+    return None
+
+
+def _gpudebug_summary(trace: str) -> None:
+    import shutil
+
+    if shutil.which("gpudebug") is None:
+        print("mpspulse: gpudebug not found; skipping browse", file=sys.stderr)
+        return
+    print(
+        "## gpudebug summary [experimental: graphics-oriented metrics on ML compute]",
+        file=sys.stderr,
+    )
+    for browse_cmd in ("status", "list"):
+        proc = subprocess.run(
+            ["gpudebug", "-q", "--oneshot", "-t", trace, "-c", browse_cmd],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        print(f"$ gpudebug {browse_cmd}\n{proc.stdout[:1500]}", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "profile":
@@ -447,6 +597,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_estimate(args)
     if args.command == "analyze":
         return cmd_analyze(args)
+    if args.command == "sync-scan":
+        return cmd_sync_scan(args)
+    if args.command == "gputrace":
+        return cmd_gputrace(args)
     raise AssertionError(f"unreachable: {args.command}")
 
 
